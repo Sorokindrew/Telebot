@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import requests
 import json
 
@@ -12,7 +11,4 @@ def highprice():
 	:return: list список самых дорогих отелей
 
 	"""
-=======
-def highprice():
->>>>>>> f8b62763ddd04ecdd3d158745771e8b656c68606
 	return 'Узнать топ самых дорогих отелей в городе'

@@ -18,4 +18,3 @@ def lowprice(headers, querystring):
 
 	data = json.loads(response.text)
 	return 'Узнать топ самых дешевых отелей в городе'
-
