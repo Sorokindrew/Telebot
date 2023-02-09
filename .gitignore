@@ -1,3 +1,5 @@
 .idea/
 __pycache__/
 image.jpeg
+.env
+token.txt

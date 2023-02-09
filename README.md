@@ -8,3 +8,4 @@
 - /history — вывод истории поиска отелей.
 
 Имя бота myHotelServiceAS
+
