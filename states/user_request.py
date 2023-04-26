@@ -6,10 +6,13 @@ class UserRequest(StatesGroup):
     hotels_quantity = State()
     is_photo_enabled = State()
     photo_quantity = State()
+    checkin_date = State()
+    checkout_date = State()
+    adults = State()
+    children_num = State()
+    children_ages = State()
+    distance_range = State()
+    cost_range = State()
 
 
-class DBRequest(UserRequest):
-    user_id = State()
-    user_command = State()
-    request_datetime = State()
-    hotel_list = State()
+

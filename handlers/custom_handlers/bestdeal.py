@@ -1,7 +1,15 @@
 from telebot.types import Message
 
 from loader import bot
-from utils.bestdeal import bestdeal
+
+
+def bestdeal():
+	"""
+	Функция для нахождения топ самых выгодных предложений.
+	:return: list список отелей оптимальных по сооьношению цена / качество
+	"""
+	return 'Узнать топ отелей, наиболее подходящих по цене и расположению ' \
+	       'от центра'
 
 
 @bot.message_handler(commands=['bestdeal'])

@@ -1,7 +1,15 @@
 from telebot.types import Message
 
 from loader import bot
-from utils.history import history
+
+
+def history():
+	"""
+	Функция для запроса истории поиска.
+	:return: list список предыдущих запросов
+
+	"""
+	return 'Узнать историю поиска отелей'
 
 
 @bot.message_handler(commands=['history'])

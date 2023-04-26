@@ -1,7 +1,15 @@
 from telebot.types import Message
 
 from loader import bot
-from utils.highprice import highprice
+
+
+def highprice():
+	"""
+	Функция для нахождения топ самых дорогих отелей.
+	:return: list список самых дорогих отелей
+
+	"""
+	return 'Узнать топ самых дорогих отелей в городе'
 
 
 @bot.message_handler(commands=['highprice'])
