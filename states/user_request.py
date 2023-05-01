@@ -2,6 +2,9 @@ from telebot.handler_backends import State, StatesGroup
 
 
 class UserRequest(StatesGroup):
+    """
+    Класс состояний для создания объекта запроса
+    """
     city = State()
     hotels_quantity = State()
     is_photo_enabled = State()

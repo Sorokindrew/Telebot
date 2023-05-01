@@ -84,42 +84,40 @@ def get_quantity_of_photos(msg: Message):
 @bot.message_handler(state=UserRequest.checkin_date)
 def get_checkin_date(msg: Message):
     with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
-        if check_if_valid_date(msg.text) \
-                and checkin_is_actual(msg.text):
-            data['checkin_date'] = msg.text
-            bot.set_state(msg.from_user.id, UserRequest.checkout_date,
-                          msg.chat.id)
+        if not check_if_valid_date(msg.text):
             bot.send_message(msg.chat.id,
-                             'Input check-out date in format dd-mm-yyyy?')
+                             'Format date is not valid. Try again. '
+                             'Input check-in date in format dd-mm-yyyy?')
         elif not checkin_is_actual(msg.text):
             bot.send_message(msg.chat.id,
                              'Check-in date should be not later then today. '
                              'Input check-in date in format dd-mm-yyyy?')
         else:
+            data['checkin_date'] = msg.text
+            bot.set_state(msg.from_user.id, UserRequest.checkout_date,
+                          msg.chat.id)
             bot.send_message(msg.chat.id,
-                             'Format date is not valid. Try again. '
-                             'Input check-in date in format dd-mm-yyyy?')
+                             'Input check-out date in format dd-mm-yyyy?')
 
 
 @bot.message_handler(state=UserRequest.checkout_date)
 def get_checkout_date(msg: Message):
     with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
-        if check_if_valid_date(msg.text) \
-                and checkin_before_checkout(data['checkin_date'], msg.text):
-            data['checkout_date'] = msg.text
-            bot.set_state(msg.from_user.id, UserRequest.adults,
-                          msg.chat.id)
+        if not check_if_valid_date(msg.text):
             bot.send_message(msg.chat.id,
-                             'Please input number of adults?')
+                             'Format date is not valid. Try again. '
+                             'Input check-out date in format dd-mm-yyyy?')
         elif not checkin_before_checkout(data['checkin_date'], msg.text):
             bot.send_message(
                 msg.chat.id,
                 f"Date should be later then {data['checkin_date']}. "
                 f"Input check-out date in format dd-mm-yyyy?")
         else:
+            data['checkout_date'] = msg.text
+            bot.set_state(msg.from_user.id, UserRequest.adults,
+                          msg.chat.id)
             bot.send_message(msg.chat.id,
-                             'Format date is not valid. Try again. '
-                             'Input check-out date in format dd-mm-yyyy?')
+                             'Please input number of adults?')
 
 
 @bot.message_handler(state=UserRequest.adults)
@@ -206,13 +204,14 @@ def get_children_ages(msg: Message):
                 bot.send_message(
                     msg.chat.id,
                     f"Input ages of {number_of_child[count_of_child]} child?")
+            bot.delete_state(msg.from_user.id, msg.chat.id)
     except ValueError:
         bot.send_message(msg.chat.id, 'Input number please.')
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('request'))
 def request_list_of_hotels(call: CallbackQuery):
-    [call_data, user_id] = call.data.split('|')
+    user_id = call.data.split('|')[1]
     with bot.retrieve_data(int(user_id), call.message.chat.id) as data:
         for hotel in api.get_list_of_hotels(data):
             if data['is_photos_enabled'] == 'No':

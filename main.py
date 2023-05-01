@@ -4,6 +4,7 @@ from telebot.custom_filters import StateFilter
 
 from loader import bot
 import handlers
+from handlers.custom_handlers.request_handler import request
 
 
 if __name__ == '__main__':
