@@ -7,6 +7,7 @@ from states.user_request import UserRequest
 import api
 from utils.check_inputed_date import check_if_valid_date, \
     checkin_before_checkout, checkin_is_actual
+import utils.select_date_from_calendar as sd
 
 
 @bot.message_handler(state=UserRequest.city)
@@ -19,7 +20,7 @@ def get_region_id(msg: Message):
     else:
         markup = InlineKeyboardMarkup()
         for city in list_of_cities:
-            callback = city[0] + '|' + city[1] + '|' + str(msg.from_user.id)
+            callback = city[0] + '|' + city[1]
             markup.add(
                 InlineKeyboardButton(city[0], callback_data=callback))
         bot.send_message(msg.chat.id, 'Please confirm your choice',
@@ -27,15 +28,17 @@ def get_region_id(msg: Message):
 
 
 @bot.callback_query_handler(
-    func=lambda call: not call.data.startswith('request'))
+    func=lambda call: not call.data.startswith('request') and not
+    call.data.startswith('photo'))
 def print_region(call: CallbackQuery):
-    [city_name, region_id, user_id] = call.data.split('|')
+    [city_name, region_id] = call.data.split('|')
     with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
         data['regionId'] = region_id
         data['city_name'] = city_name
-    bot.set_state(int(user_id), UserRequest.hotels_quantity,
+    bot.set_state(call.from_user.id, UserRequest.hotels_quantity,
                   call.message.chat.id)
-    bot.send_message(int(user_id), 'Input requested quantity of hotels?')
+    bot.send_message(call.message.chat.id,
+                     'Input requested quantity of hotels?')
 
 
 @bot.message_handler(state=UserRequest.hotels_quantity)
@@ -44,32 +47,33 @@ def get_hotels_quantity(msg: Message):
         data['hotels_quantity'] = int(msg.text)
     bot.set_state(msg.from_user.id, UserRequest.is_photo_enabled,
                   msg.chat.id)
-    markup = ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
-    btn_yes = KeyboardButton('Yes')
-    btn_no = KeyboardButton('No')
+    markup = InlineKeyboardMarkup()
+    btn_yes = InlineKeyboardButton('Yes', callback_data='photo_Yes')
+    btn_no = InlineKeyboardButton('No', callback_data='photo_No')
     markup.add(btn_yes, btn_no)
     bot.send_message(msg.chat.id, 'Would You like to get photos?',
                      reply_markup=markup)
 
 
-@bot.message_handler(state=UserRequest.is_photo_enabled)
-def is_photos_enabled(msg: Message):
-    markup = ReplyKeyboardRemove()
-    with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
-        data['is_photos_enabled'] = msg.text
-    if msg.text == 'Yes':
-        bot.set_state(msg.from_user.id, UserRequest.photo_quantity,
-                      msg.chat.id)
-        bot.send_message(msg.chat.id, 'Input quantity of photos? '
-                                      'Not more then 10.', reply_markup=markup)
+@bot.callback_query_handler(func=lambda call: call.data.startswith('photo'))
+def is_photos_enabled(call: CallbackQuery):
+    with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
+        is_photo = call.data.split('_')[1]
+        data['is_photos_enabled'] = is_photo
+    if is_photo == 'Yes':
+        bot.set_state(call.from_user.id, UserRequest.photo_quantity,
+                      call.message.chat.id)
+        bot.send_message(call.message.chat.id, 'Input quantity of photos? '
+                                               'Not more then 10.')
     else:
-        with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
+        with bot.retrieve_data(call.from_user.id,
+                               call.message.chat.id) as data:
             data['quantity_of_photos'] = 0
-        bot.set_state(msg.from_user.id, UserRequest.checkin_date,
-                      msg.chat.id)
-        bot.send_message(msg.chat.id,
-                         'Input check-in date in format dd-mm-yyyy?',
-                         reply_markup=markup)
+        bot.set_state(call.from_user.id, UserRequest.checkin_date,
+                      call.message.chat.id)
+        bot.send_message(call.message.chat.id,
+                         'Please select check-in date?',
+                         reply_markup=sd.calendar_markup)
 
 
 @bot.message_handler(state=UserRequest.photo_quantity)
@@ -78,46 +82,50 @@ def get_quantity_of_photos(msg: Message):
         data['quantity_of_photos'] = int(msg.text)
     bot.set_state(msg.from_user.id, UserRequest.checkin_date,
                   msg.chat.id)
-    bot.send_message(msg.chat.id, 'Input check-in date in format dd-mm-yyyy?')
+    # bot.send_message(msg.chat.id, 'Input check-in date in format dd-mm-yyyy?')
+
+    bot.send_message(msg.chat.id,
+                     'Please select check-in date?',
+                     reply_markup=sd.calendar_markup)
 
 
-@bot.message_handler(state=UserRequest.checkin_date)
-def get_checkin_date(msg: Message):
-    with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
-        if not check_if_valid_date(msg.text):
-            bot.send_message(msg.chat.id,
-                             'Format date is not valid. Try again. '
-                             'Input check-in date in format dd-mm-yyyy?')
-        elif not checkin_is_actual(msg.text):
-            bot.send_message(msg.chat.id,
-                             'Check-in date should be not later then today. '
-                             'Input check-in date in format dd-mm-yyyy?')
-        else:
-            data['checkin_date'] = msg.text
-            bot.set_state(msg.from_user.id, UserRequest.checkout_date,
-                          msg.chat.id)
-            bot.send_message(msg.chat.id,
-                             'Input check-out date in format dd-mm-yyyy?')
+# @bot.message_handler(state=UserRequest.checkin_date)
+# def get_checkin_date(msg: Message):
+#     with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
+#         if not check_if_valid_date(msg.text):
+#             bot.send_message(msg.chat.id,
+#                              'Format date is not valid. Try again. '
+#                              'Input check-in date in format dd-mm-yyyy?')
+#         elif not checkin_is_actual(msg.text):
+#             bot.send_message(msg.chat.id,
+#                              'Check-in date should be not later then today. '
+#                              'Input check-in date in format dd-mm-yyyy?')
+#         else:
+#             data['checkin_date'] = msg.text
+#             bot.set_state(msg.from_user.id, UserRequest.checkout_date,
+#                           msg.chat.id)
+#             bot.send_message(msg.chat.id,
+#                              'Input check-out date in format dd-mm-yyyy?')
 
 
-@bot.message_handler(state=UserRequest.checkout_date)
-def get_checkout_date(msg: Message):
-    with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
-        if not check_if_valid_date(msg.text):
-            bot.send_message(msg.chat.id,
-                             'Format date is not valid. Try again. '
-                             'Input check-out date in format dd-mm-yyyy?')
-        elif not checkin_before_checkout(data['checkin_date'], msg.text):
-            bot.send_message(
-                msg.chat.id,
-                f"Date should be later then {data['checkin_date']}. "
-                f"Input check-out date in format dd-mm-yyyy?")
-        else:
-            data['checkout_date'] = msg.text
-            bot.set_state(msg.from_user.id, UserRequest.adults,
-                          msg.chat.id)
-            bot.send_message(msg.chat.id,
-                             'Please input number of adults?')
+# @bot.message_handler(state=UserRequest.checkout_date)
+# def get_checkout_date(msg: Message):
+#     with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
+#         if not check_if_valid_date(msg.text):
+#             bot.send_message(msg.chat.id,
+#                              'Format date is not valid. Try again. '
+#                              'Input check-out date in format dd-mm-yyyy?')
+#         elif not checkin_before_checkout(data['checkin_date'], msg.text):
+#             bot.send_message(
+#                 msg.chat.id,
+#                 f"Date should be later then {data['checkin_date']}. "
+#                 f"Input check-out date in format dd-mm-yyyy?")
+#         else:
+#             data['checkout_date'] = msg.text
+#             bot.set_state(msg.from_user.id, UserRequest.adults,
+#                           msg.chat.id)
+#             bot.send_message(msg.chat.id,
+#                              'Please input number of adults?')
 
 
 @bot.message_handler(state=UserRequest.adults)
@@ -145,7 +153,7 @@ def get_children_quantity(msg: Message):
             markup = InlineKeyboardMarkup()
             markup.add(InlineKeyboardButton(
                 'Request',
-                callback_data='request' + '|' + str(msg.from_user.id)))
+                callback_data='request'))
             with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
                 bot.send_message(
                     msg.chat.id,
@@ -185,7 +193,7 @@ def get_children_ages(msg: Message):
                 markup = InlineKeyboardMarkup()
                 markup.add(InlineKeyboardButton(
                     'Request',
-                    callback_data='request' + '|' + str(msg.from_user.id)))
+                    callback_data='request'))
                 bot.send_message(
                     msg.chat.id,
                     f"City: {data['city_name']}\n "
@@ -204,15 +212,14 @@ def get_children_ages(msg: Message):
                 bot.send_message(
                     msg.chat.id,
                     f"Input ages of {number_of_child[count_of_child]} child?")
-            bot.delete_state(msg.from_user.id, msg.chat.id)
+
     except ValueError:
         bot.send_message(msg.chat.id, 'Input number please.')
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('request'))
 def request_list_of_hotels(call: CallbackQuery):
-    user_id = call.data.split('|')[1]
-    with bot.retrieve_data(int(user_id), call.message.chat.id) as data:
+    with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
         for hotel in api.get_list_of_hotels(data):
             if data['is_photos_enabled'] == 'No':
                 bot.send_message(call.message.chat.id, hotel.get_hotel_info())
@@ -229,3 +236,9 @@ def request_list_of_hotels(call: CallbackQuery):
                             InputMediaPhoto(
                                 hotel.get_hotel_photos()[index]))
                 bot.send_media_group(call.message.chat.id, media)
+    bot.delete_state(call.from_user.id, call.message.chat.id)
+    bot.send_message(
+        chat_id=call.message.chat.id,
+        text="For new request use one of the following command "
+             "\n/lowprice\n/highprice\n/bestdeal\n/history"
+    )
