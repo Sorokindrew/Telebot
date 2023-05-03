@@ -22,6 +22,7 @@ class Hotel:
     :param address: Адрес отеля
     :param hotel_photos: Массив URL фото отеля
     """
+
     def __init__(self, info: dict, address: str, hotel_photos: List):
         self.__name = info['name']
         self.__address = address
@@ -67,14 +68,22 @@ def get_list_of_hotels(data: dict) -> List:
         '-')
     [checkout_day, checkout_month, checkout_year] = data[
         'checkout_date'].split('-')
-    children = [{'age': ages} for ages in data['children_ages']]
+    children: List = [{'age': ages} for ages in data['children_ages']]
 
     if data['command'] == 'lowprice':
         sort = 'PRICE_LOW_TO_HIGH'
+        filters = {}
     elif data['command'] == 'highprice':
         sort = 'PRICE_HIGH_TO_LOW'
+        filters = {}
     else:
+        minimal_cost: int = data['minimal_cost']
+        maximum_cost: int = data['maximum_cost']
         sort = 'DISTANCE'
+        filters = {"price": {"max": maximum_cost,
+                             "min": minimal_cost
+                             }
+                   }
 
     url = "https://hotels4.p.rapidapi.com/properties/v2/list"
 
@@ -101,6 +110,7 @@ def get_list_of_hotels(data: dict) -> List:
         "resultsStartingIndex": 0,
         "resultsSize": data['hotels_quantity'],
         "sort": sort,
+        "filters": filters
     }
     print('Sending request to API...')
     response = requests.post(url, json=payload, headers=headers)

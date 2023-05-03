@@ -1,12 +1,10 @@
 from telebot.types import Message, InlineKeyboardButton, \
-    InlineKeyboardMarkup, CallbackQuery, ReplyKeyboardMarkup, \
-    ReplyKeyboardRemove, KeyboardButton, InputMediaPhoto
+    InlineKeyboardMarkup, CallbackQuery, InputMediaPhoto
 
 from loader import bot
 from states.user_request import UserRequest
 import api
-from utils.check_inputed_date import check_if_valid_date, \
-    checkin_before_checkout, checkin_is_actual
+from utils.sort_bestdeal_hotels import sort_bestdeal_hotels
 import utils.select_date_from_calendar as sd
 
 
@@ -82,50 +80,9 @@ def get_quantity_of_photos(msg: Message):
         data['quantity_of_photos'] = int(msg.text)
     bot.set_state(msg.from_user.id, UserRequest.checkin_date,
                   msg.chat.id)
-    # bot.send_message(msg.chat.id, 'Input check-in date in format dd-mm-yyyy?')
-
     bot.send_message(msg.chat.id,
                      'Please select check-in date?',
                      reply_markup=sd.calendar_markup)
-
-
-# @bot.message_handler(state=UserRequest.checkin_date)
-# def get_checkin_date(msg: Message):
-#     with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
-#         if not check_if_valid_date(msg.text):
-#             bot.send_message(msg.chat.id,
-#                              'Format date is not valid. Try again. '
-#                              'Input check-in date in format dd-mm-yyyy?')
-#         elif not checkin_is_actual(msg.text):
-#             bot.send_message(msg.chat.id,
-#                              'Check-in date should be not later then today. '
-#                              'Input check-in date in format dd-mm-yyyy?')
-#         else:
-#             data['checkin_date'] = msg.text
-#             bot.set_state(msg.from_user.id, UserRequest.checkout_date,
-#                           msg.chat.id)
-#             bot.send_message(msg.chat.id,
-#                              'Input check-out date in format dd-mm-yyyy?')
-
-
-# @bot.message_handler(state=UserRequest.checkout_date)
-# def get_checkout_date(msg: Message):
-#     with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
-#         if not check_if_valid_date(msg.text):
-#             bot.send_message(msg.chat.id,
-#                              'Format date is not valid. Try again. '
-#                              'Input check-out date in format dd-mm-yyyy?')
-#         elif not checkin_before_checkout(data['checkin_date'], msg.text):
-#             bot.send_message(
-#                 msg.chat.id,
-#                 f"Date should be later then {data['checkin_date']}. "
-#                 f"Input check-out date in format dd-mm-yyyy?")
-#         else:
-#             data['checkout_date'] = msg.text
-#             bot.set_state(msg.from_user.id, UserRequest.adults,
-#                           msg.chat.id)
-#             bot.send_message(msg.chat.id,
-#                              'Please input number of adults?')
 
 
 @bot.message_handler(state=UserRequest.adults)
@@ -149,7 +106,7 @@ def get_children_quantity(msg: Message):
             data['children_ages'] = []
         bot.set_state(msg.from_user.id, UserRequest.children_ages,
                       msg.chat.id)
-        if int(msg.text) == 0:
+        if int(msg.text) == 0 and data['command'] != 'bestdeal':
             markup = InlineKeyboardMarkup()
             markup.add(InlineKeyboardButton(
                 'Request',
@@ -158,13 +115,19 @@ def get_children_quantity(msg: Message):
                 bot.send_message(
                     msg.chat.id,
                     f"City: {data['city_name']}\n "
-                    f"Quantity of hotels requested: {data['hotels_quantity']}\n "
-                    f"Download photos: {data['is_photos_enabled']}\n "
-                    f"Quantity of photos: {data['quantity_of_photos']}\n "
-                    f"Check in date: {data['checkin_date']}\n "
-                    f"Check out date: {data['checkout_date']}\n "
-                    f"Number of adults: {data['adults']}\n "
-                    f"Number of children: {msg.text}\n ", reply_markup=markup)
+                    f"Quantity of hotels requested: "
+                    f"{data['hotels_quantity']}\n"
+                    f"Download photos: {data['is_photos_enabled']}\n"
+                    f"Quantity of photos: {data['quantity_of_photos']}\n"
+                    f"Check in date: {data['checkin_date']}\n"
+                    f"Check out date: {data['checkout_date']}\n"
+                    f"Number of adults: {data['adults']}\n"
+                    f"Number of children: {msg.text}\n", reply_markup=markup)
+        elif int(msg.text) == 0 and data['command'] == 'bestdeal':
+            bot.set_state(msg.from_user.id, UserRequest.distance_range,
+                          msg.chat.id)
+            bot.send_message(msg.chat.id,
+                             'Please input distance from downtown in km:')
         elif int(msg.text) == 1:
             bot.send_message(msg.chat.id, "Input ages of your child?")
             bot.set_state(msg.from_user.id, UserRequest.children_ages,
@@ -189,7 +152,8 @@ def get_children_ages(msg: Message):
                 4: 'fifth'
             }
             data['children_ages'].append(int(msg.text))
-            if data['children_num'] == len(data['children_ages']):
+            if data['children_num'] == len(data['children_ages']) and \
+                    data['command'] != 'bestdeal':
                 markup = InlineKeyboardMarkup()
                 markup.add(InlineKeyboardButton(
                     'Request',
@@ -197,21 +161,28 @@ def get_children_ages(msg: Message):
                 bot.send_message(
                     msg.chat.id,
                     f"City: {data['city_name']}\n "
-                    f"Quantity of hotels requested: {data['hotels_quantity']}\n "
-                    f"Download photos: {data['is_photos_enabled']}\n "
-                    f"Quantity of photos: {data['quantity_of_photos']}\n "
-                    f"Check in date: {data['checkin_date']}\n "
-                    f"Check out date: {data['checkout_date']}\n "
-                    f"Number of adults: {data['adults']}\n "
-                    f"Number of children: {data['children_num']}\n "
+                    f"Quantity of hotels requested: "
+                    f"{data['hotels_quantity']}\n"
+                    f"Download photos: {data['is_photos_enabled']}\n"
+                    f"Quantity of photos: {data['quantity_of_photos']}\n"
+                    f"Check in date: {data['checkin_date']}\n"
+                    f"Check out date: {data['checkout_date']}\n"
+                    f"Number of adults: {data['adults']}\n"
+                    f"Number of children: {data['children_num']}\n"
                     f"Ages of children: {data['children_ages']}",
                     reply_markup=markup
                 )
+            elif data['children_num'] == len(data['children_ages']) and \
+                    data['command'] == 'bestdeal':
+                bot.set_state(msg.from_user.id, UserRequest.distance_range,
+                              msg.chat.id)
+                bot.send_message(msg.chat.id,
+                                 'Please input distance from downtown in km:')
             else:
                 count_of_child = len(data['children_ages'])
                 bot.send_message(
                     msg.chat.id,
-                    f"Input ages of {number_of_child[count_of_child]} child?")
+                    f"Input ages of {number_of_child[count_of_child]} child:")
 
     except ValueError:
         bot.send_message(msg.chat.id, 'Input number please.')
@@ -219,8 +190,16 @@ def get_children_ages(msg: Message):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('request'))
 def request_list_of_hotels(call: CallbackQuery):
+    bot.send_message(call.from_user.id, 'Working on your request ...')
     with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
-        for hotel in api.get_list_of_hotels(data):
+        if data['command'] == 'bestdeal':
+            requested_hotels = \
+                sort_bestdeal_hotels(api.get_list_of_hotels(data),
+                                     data['maximum_cost'],
+                                     data['distance_range'])
+        else:
+            requested_hotels = api.get_list_of_hotels(data)
+        for hotel in requested_hotels:
             if data['is_photos_enabled'] == 'No':
                 bot.send_message(call.message.chat.id, hotel.get_hotel_info())
             else:
@@ -242,3 +221,47 @@ def request_list_of_hotels(call: CallbackQuery):
         text="For new request use one of the following command "
              "\n/lowprice\n/highprice\n/bestdeal\n/history"
     )
+
+
+@bot.message_handler(state=UserRequest.distance_range)
+def get_distance_from_downtown(msg: Message):
+    try:
+        with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
+            data['distance_range'] = int(msg.text)
+            bot.set_state(msg.from_user.id, UserRequest.cost_range,
+                          msg.chat.id)
+            bot.send_message(msg.chat.id,
+                             'Input minimal cost in $:')
+    except ValueError:
+        bot.send_message(msg.chat.id, 'Input number please')
+
+
+@bot.message_handler(state=UserRequest.cost_range)
+def get_cost_range(msg: Message):
+    with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
+        if 'minimal_cost' not in data.keys():
+            data['minimal_cost'] = int(msg.text)
+            bot.send_message(msg.chat.id,
+                             'Input maximum cost in $:')
+        else:
+            data['maximum_cost'] = int(msg.text)
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton(
+                'Request',
+                callback_data='request'))
+            bot.send_message(
+                msg.chat.id,
+                f"City: {data['city_name']}\n "
+                f"Quantity of hotels requested: {data['hotels_quantity']}\n"
+                f"Download photos: {data['is_photos_enabled']}\n"
+                f"Quantity of photos: {data['quantity_of_photos']}\n"
+                f"Check in date: {data['checkin_date']}\n"
+                f"Check out date: {data['checkout_date']}\n"
+                f"Number of adults: {data['adults']}\n"
+                f"Number of children: {data['children_num']}\n"
+                f"Ages of children: {data['children_ages']}\n"
+                f"Maximum distance from downtown: {data['distance_range']}km\n"
+                f"Minimal cost: {data['minimal_cost']}$\n"
+                f"Maximum cost: {data['maximum_cost']}$\n",
+                reply_markup=markup
+            )
