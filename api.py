@@ -55,7 +55,7 @@ class Hotel:
         return hotel_info
 
 
-def get_list_of_hotels(data: dict) -> List:
+def get_list_of_hotels(data: dict) -> List[Hotel]:
     """
     Функция получения данных об отелях, по заданным параметрам
     :param data: Словарь данных с запрашиваемыми параметрами

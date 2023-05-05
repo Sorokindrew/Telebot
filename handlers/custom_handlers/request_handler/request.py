@@ -1,3 +1,5 @@
+import sqlite3
+
 from telebot.types import Message, InlineKeyboardButton, \
     InlineKeyboardMarkup, CallbackQuery, InputMediaPhoto
 
@@ -5,6 +7,7 @@ from loader import bot
 from states.user_request import UserRequest
 import api
 from utils.sort_bestdeal_hotels import sort_bestdeal_hotels
+import data_base
 import utils.select_date_from_calendar as sd
 
 
@@ -215,6 +218,10 @@ def request_list_of_hotels(call: CallbackQuery):
                             InputMediaPhoto(
                                 hotel.get_hotel_photos()[index]))
                 bot.send_media_group(call.message.chat.id, media)
+        with sqlite3.connect('history.db') as conn:
+            data_base.insert_request_info_to_db(conn, data)
+            request_id = data_base.get_request_id(conn, data)
+            data_base.insert_result_of_request_to_db(conn, hotels=requested_hotels, request_id=request_id)
     bot.delete_state(call.from_user.id, call.message.chat.id)
     bot.send_message(
         chat_id=call.message.chat.id,
