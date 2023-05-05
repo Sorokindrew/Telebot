@@ -24,15 +24,18 @@ calendar_markup: InlineKeyboardMarkup = calendar.create_calendar(
     func=lambda call: call.data.startswith(calendar_1_callback.prefix)
 )
 def callback_inline(call: CallbackQuery):
-    # At this point, we are sure that this calendar is ours. So we cut the line by the separator of our calendar
+    # At this point, we are sure that this calendar is ours.
+    # So we cut the line by the separator of our calendar
     name, action, year, month, day = call.data.split(calendar_1_callback.sep)
-    # Processing the calendar. Get either the date or None if the buttons are of a different type
+    # Processing the calendar. Get either the date
+    # or None if the buttons are of a different type
     date = calendar.calendar_query_handler(
         bot=bot, call=call, name=name, action=action, year=year, month=month,
         day=day
     )
 
-    # There are additional steps. Let's say if the date DAY is selected, you can execute your code. I sent a message.
+    # There are additional steps. Let's say if the date DAY is selected,
+    # you can execute your code. I sent a message.
     if action == "DAY":
         with bot.retrieve_data(call.from_user.id, call.message.chat.id) as \
                 data:

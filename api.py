@@ -1,16 +1,13 @@
-import os
 from typing import List
 
 import requests
-from dotenv import load_dotenv
 
-load_dotenv()
+from config_data import config
 
-API_KEY = os.getenv('API_KEY')
 
 headers = {
     "content-type": "application/json",
-    "X-RapidAPI-Key": API_KEY,
+    "X-RapidAPI-Key": config.RAPID_API_KEY,
     "X-RapidAPI-Host": "hotels4.p.rapidapi.com"
 }
 

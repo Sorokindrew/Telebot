@@ -13,21 +13,6 @@ def date_from_str_to_datetime(date: str) -> object:
     return date_in_datetime
 
 
-def check_if_valid_date(date: str) -> bool:
-    """
-    Функция проверки корректности ввода даты
-    :param date: Дата в строковом формате
-    :return: True or False
-    """
-    if re.match('\d\d\-\d\d\-\d\d\d\d', date):
-        [day, month, year] = date.split('-')
-        if int(day) in range(0, 32) and int(month) in range(0, 13) and \
-                int(year) >= 2023:
-            return True
-    else:
-        return False
-
-
 def checkin_before_checkout(checkin: str, checkout: str) -> bool:
     """
     Функция проверки, что дата выезда позже даты заезда
