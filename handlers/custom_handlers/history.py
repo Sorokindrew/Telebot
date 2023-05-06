@@ -17,5 +17,6 @@ def history_handler(msg: Message) -> None:
 
 	user_id = msg.from_user.id
 	with sqlite3.connect('history.db') as conn:
-		answer = data_base.get_history(conn, user_id)
-	bot.send_message(msg.chat.id, answer)
+		all_requests = data_base.get_history(conn, user_id)
+		for request in all_requests:
+			bot.send_message(msg.chat.id, request)

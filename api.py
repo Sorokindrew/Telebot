@@ -4,7 +4,6 @@ import requests
 
 from config_data import config
 
-
 headers = {
     "content-type": "application/json",
     "X-RapidAPI-Key": config.RAPID_API_KEY,
@@ -31,10 +30,13 @@ class Hotel:
             info['price']['lead']['formatted'] \
             + ' ' \
             + info['price']['priceMessages'][0]['value']
+        # if info['price']['displayMessages'] is not None:
         self.__total_price = \
             info['price']['displayMessages'][1]['lineItems'][0]['value'] \
             + ' ' \
             + info['price']['displayMessages'][2]['lineItems'][0]['value']
+        # else:
+        #     self.__total_price = 'No info'
 
     def get_name(self) -> str:
         return self.__name
@@ -55,28 +57,34 @@ class Hotel:
         return hotel_info
 
 
-def get_list_of_hotels(data: dict) -> List[Hotel]:
+def get_list_of_hotels(data: dict, start_index: int) -> List[Hotel]:
     """
     Функция получения данных об отелях, по заданным параметрам
     :param data: Словарь данных с запрашиваемыми параметрами
+    :param start_index: Индекс с которого начинать поиск
     :return: Массив объектов класса Hotel
     """
-    [checkin_day, checkin_month, checkin_year] = data['checkin_date'].split(
-        '-')
-    [checkout_day, checkout_month, checkout_year] = data[
-        'checkout_date'].split('-')
+    [checkin_day,
+     checkin_month,
+     checkin_year] = data['checkin_date'].split('-')
+    [checkout_day,
+     checkout_month,
+     checkout_year] = data['checkout_date'].split('-')
     children: List = [{'age': ages} for ages in data['children_ages']]
 
     if data['command'] == 'lowprice':
         sort = 'PRICE_LOW_TO_HIGH'
+        quantity = data['hotels_quantity']
         filters = {}
     elif data['command'] == 'highprice':
-        sort = 'PRICE_HIGH_TO_LOW'
+        sort = 'PRICE_LOW_TO_HIGH'
+        quantity = 50
         filters = {}
     else:
         minimal_cost: int = data['minimal_cost']
         maximum_cost: int = data['maximum_cost']
         sort = 'DISTANCE'
+        quantity = data['hotels_quantity']
         filters = {"price": {"max": maximum_cost,
                              "min": minimal_cost
                              }
@@ -104,8 +112,8 @@ def get_list_of_hotels(data: dict) -> List[Hotel]:
                 "children": children
             }
         ],
-        "resultsStartingIndex": 0,
-        "resultsSize": data['hotels_quantity'],
+        "resultsStartingIndex": start_index,
+        "resultsSize": quantity,
         "sort": sort,
         "filters": filters
     }
@@ -114,8 +122,19 @@ def get_list_of_hotels(data: dict) -> List[Hotel]:
 
     hotels_data_from_response = \
         response.json()['data']['propertySearch']['properties']
+    print('Got info from API')
     requested_hotels = []
+    # Реализовано так, потому что при запросе большого числа отелей (бОльшего
+    # чем есть в базе) возвращаются пустые объекты.
+    # По этой причене, запрашивается порционно, по 50 объектов, до тех пор пока
+    # последний в массиве не будет пустым. Затем обрабатывается массив из
+    # 50 объектов до первого пустого.
+    if data['command'] == 'highprice' and \
+            hotels_data_from_response[-1]['price']['lead']['amount'] != 0:
+        return []
     for hotel in hotels_data_from_response:
+        if hotel['price']['lead']['amount'] == 0:
+            continue
         if data['is_photos_enabled'] == 'Yes':
             [hotel_address, hotel_photos] = get_hotel_photo_and_address(
                 hotel_id=hotel['id'],
@@ -126,7 +145,6 @@ def get_list_of_hotels(data: dict) -> List[Hotel]:
                 quantity_of_photos=0
             )
         requested_hotels.append(Hotel(hotel, hotel_address, hotel_photos))
-    print('Got info from API')
     return requested_hotels
 
 

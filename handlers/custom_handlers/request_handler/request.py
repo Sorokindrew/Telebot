@@ -197,11 +197,25 @@ def request_list_of_hotels(call: CallbackQuery):
     with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
         if data['command'] == 'bestdeal':
             requested_hotels = \
-                sort_bestdeal_hotels(api.get_list_of_hotels(data),
+                sort_bestdeal_hotels(api.get_list_of_hotels(data,
+                                                            start_index=0),
                                      data['maximum_cost'],
                                      data['distance_range'])
+        elif data['command'] == 'highprice':
+            start_index = 0
+            hotels_list = []
+            while not hotels_list:
+                hotels_list = api.get_list_of_hotels(data,
+                                                     start_index=start_index)
+                start_index += 50
+            # hotels_list = api.get_list_of_hotels(data, start_index)
+            requested_hotels = []
+            for index in range(len(hotels_list) - 1,
+                               len(hotels_list) - data['hotels_quantity'] - 1,
+                               -1):
+                requested_hotels.append(hotels_list[index])
         else:
-            requested_hotels = api.get_list_of_hotels(data)
+            requested_hotels = api.get_list_of_hotels(data, start_index=0)
         for hotel in requested_hotels:
             if data['is_photos_enabled'] == 'No':
                 bot.send_message(call.message.chat.id, hotel.get_hotel_info())
@@ -221,7 +235,9 @@ def request_list_of_hotels(call: CallbackQuery):
         with sqlite3.connect('history.db') as conn:
             data_base.insert_request_info_to_db(conn, data)
             request_id = data_base.get_request_id(conn, data)
-            data_base.insert_result_of_request_to_db(conn, hotels=requested_hotels, request_id=request_id)
+            data_base.insert_result_of_request_to_db(conn,
+                                                     hotels=requested_hotels,
+                                                     request_id=request_id)
     bot.delete_state(call.from_user.id, call.message.chat.id)
     bot.send_message(
         chat_id=call.message.chat.id,
