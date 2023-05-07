@@ -6,8 +6,8 @@ from loader import bot
 @bot.message_handler(commands=['start'])
 def bot_start(msg: Message) -> None:
     """
-    Функция обработки команды start
-    :param msg: объект полученного сообщения от пользователя
+    Обработка команды start
+    :param msg: Объект полученного сообщения от пользователя
     :return: None
 
     """

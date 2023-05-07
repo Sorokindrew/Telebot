@@ -9,8 +9,8 @@ from states.user_request import UserRequest
 @bot.message_handler(commands=['highprice'])
 def highprice_handler(msg: Message) -> None:
     """
-    Функция обработки команды highprice
-    :param msg: объект полученного сообщения от пользователя
+    Обработка команды highprice
+    :param msg: Объект полученного сообщения от пользователя
     :return: None
 
     """

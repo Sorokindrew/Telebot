@@ -9,7 +9,7 @@ from states.user_request import UserRequest
 @bot.message_handler(commands=['bestdeal'])
 def bestdeal_handler(msg: Message) -> None:
     """
-    Функция обработки команды bestdeal
+    Обработка команды bestdeal
     :param msg: Объект полученного сообщения от пользователя
     :return: None
 

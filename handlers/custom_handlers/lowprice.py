@@ -9,7 +9,7 @@ from states.user_request import UserRequest
 @bot.message_handler(commands=['lowprice'])
 def lowprice_handler(msg: Message) -> None:
     """
-    Функция обработки команды lowprice
+    Обработка команды lowprice
     :param msg: Объект полученного сообщения от пользователя
     :return: None
 

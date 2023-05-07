@@ -4,7 +4,7 @@ import datetime
 
 def date_from_str_to_datetime(date: str) -> object:
     """
-    Функция преобразования даты из строкового формата в объект datetime
+    Преобразовать дату из строкового формата в объект datetime
     :param date: Дата в строковом формате
     :return: Объект datetime.date
     """
@@ -15,7 +15,7 @@ def date_from_str_to_datetime(date: str) -> object:
 
 def checkin_before_checkout(checkin: str, checkout: str) -> bool:
     """
-    Функция проверки, что дата выезда позже даты заезда
+    Проверить что дата выезда позже даты заезда
     :param checkin: Дата заезда в строковом формате
     :param checkout: Дата выезда в строковом формате
     :return: True or False
@@ -30,7 +30,7 @@ def checkin_before_checkout(checkin: str, checkout: str) -> bool:
 
 def checkin_is_actual(checkin: str):
     """
-    Функция проверки, что дата заезда не в прошлом
+    Проверить что дата заезда не в прошлом
     :param checkin: Дата заезда в стороковом формате
     :return: True or False
     """
