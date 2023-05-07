@@ -4,34 +4,13 @@ from typing import List
 from api import Hotel
 
 
-# def create_table():
-#     table_request = """
-#     CREATE TABLE IF NOT EXISTS history (
-#     request INTEGER PRIMARY KEY AUTOINCREMENT,
-#     date_time VARCHAR(255) NOT NULL,
-#     user_id INTEGER NOT NULL,
-#     command VARCHAR(255) NOT NULL,
-#     city VARCHAR(255) NOT NULL)
-#     """
-#
-#     table_hotels = """
-#     CREATE TABLE IF NOT EXISTS hotels (
-#     id INTEGER PRIMARY KEY AUTOINCREMENT,
-#     hotel_name VARCHAR(255) NOT NULL,
-#     hotel_price VARCHAR(255) NOT NULL,
-#     request INTEGER NOT NULL,
-#     FOREIGN KEY (request) REFERENCES history (request)
-#     )
-#     """
-#
-#     with sqlite3.connect('history.db') as conn:
-#         cursor = conn.cursor()
-#         cursor.execute(table_hotels)
-#         cursor.execute(table_request)
-#         conn.commit()
-#
-
-def insert_request_info_to_db(conn: sqlite3.Connection, data: dict):
+def insert_request_info_to_db(conn: sqlite3.Connection, data: dict) -> None:
+    """
+    Записать информацию о запросе в БД
+    :param conn: Соединение с БД
+    :param data: Словарь с полной информацией о запросе
+    :return: None
+    """
     insert_request = f"""
     INSERT INTO history(date_time, user_id, command, city)
     VALUES (?, ?, ?, ?) 
@@ -45,7 +24,13 @@ def insert_request_info_to_db(conn: sqlite3.Connection, data: dict):
     conn.commit()
 
 
-def get_request_id(conn: sqlite3.Connection, data: dict):
+def get_request_id(conn: sqlite3.Connection, data: dict) -> int:
+    """
+    Получить информацию о порядковом номере запроса в БД
+    :param conn: Соединение с БД
+    :param data: Словарь с полной информацией о запросе
+    :return: Порядковый номер запроса в БД
+    """
     get_request_id_sql = f"""
     SELECT request FROM history WHERE user_id = ? AND 
                                 date_time = ?;
@@ -60,7 +45,14 @@ def get_request_id(conn: sqlite3.Connection, data: dict):
 
 def insert_result_of_request_to_db(conn: sqlite3.Connection,
                                    hotels: List[Hotel],
-                                   request_id: int):
+                                   request_id: int) -> None:
+    """
+    Записать информацию о результатах запроса в БД
+    :param conn: Соединение с БД
+    :param hotels: Список полученных отелей
+    :param request_id: Порядковый номер запроса в БД
+    :return: None
+    """
     hotels_info_to_db = []
     for hotel in hotels:
         hotel_info = hotel.get_hotel_info()
@@ -77,6 +69,12 @@ def insert_result_of_request_to_db(conn: sqlite3.Connection,
 
 
 def get_history(conn: sqlite3.Connection, user_id: int) -> List:
+    """
+    Получить историю запросов пользователя
+    :param conn: Соединение с БД
+    :param user_id: ID пользователя
+    :return: Массив с информацией о запросах пользователя
+    """
     get_history_sql = """
     SELECT * FROM history WHERE user_id = ?;
     """

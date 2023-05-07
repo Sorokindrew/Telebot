@@ -39,15 +39,23 @@ class Hotel:
         #     self.__total_price = 'No info'
 
     def get_name(self) -> str:
+        """
+        Получить названия отеля
+        :return str: Название отеля
+        """
         return self.__name
 
     def get_hotel_photos(self) -> List:
+        """
+        Получить массив URL фотографий отеля
+        :return List: Массив с URL фотографий отеля
+        """
         return self.__photos
 
     def get_hotel_info(self) -> str:
         """
-        Метод получения информации об отеле для отображения пользователю
-        :return: hotel_info - строка с полной информацией
+        Получить информацию об отеле для отображения пользователю
+        :return: hotel_info - Строка с полной информацией
         """
         hotel_info = 'Name of hotel: ' + self.__name + '\n' \
                      + 'Address: ' + self.__address + '\n' \
@@ -59,7 +67,7 @@ class Hotel:
 
 def get_list_of_hotels(data: dict, start_index: int) -> List[Hotel]:
     """
-    Функция получения данных об отелях, по заданным параметрам
+    Получить данные об отелях, по заданным параметрам
     :param data: Словарь данных с запрашиваемыми параметрами
     :param start_index: Индекс с которого начинать поиск
     :return: Массив объектов класса Hotel
@@ -126,7 +134,7 @@ def get_list_of_hotels(data: dict, start_index: int) -> List[Hotel]:
     requested_hotels = []
     # Реализовано так, потому что при запросе большого числа отелей (бОльшего
     # чем есть в базе) возвращаются пустые объекты.
-    # По этой причене, запрашивается порционно, по 50 объектов, до тех пор пока
+    # По этой причине, запрашивается порционно по 50 объектов, до тех пор пока
     # последний в массиве не будет пустым. Затем обрабатывается массив из
     # 50 объектов до первого пустого.
     if data['command'] == 'highprice' and \
@@ -151,7 +159,7 @@ def get_list_of_hotels(data: dict, start_index: int) -> List[Hotel]:
 def get_hotel_photo_and_address(hotel_id: int, quantity_of_photos: int) -> \
         List:
     """
-    Функция получения списка URL фото отеля и адреса
+    Получить список URL фото отеля и адреса
     :param hotel_id: ID отеля
     :param quantity_of_photos: Количество запрашиваемых фото
     :return: Массив [адрес, массив URL фото]
@@ -179,7 +187,7 @@ def get_hotel_photo_and_address(hotel_id: int, quantity_of_photos: int) -> \
 
 def get_regionid_of_city(city_name: str) -> List:
     """
-    Фнукция получения городов с введенным названием
+    Получить список городов с введенным названием
     :param city_name: Название города
     :return: Массив кортежей городов формата [(название города, regionId)]
     """

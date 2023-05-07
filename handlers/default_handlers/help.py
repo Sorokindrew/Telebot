@@ -6,8 +6,8 @@ from loader import bot
 @bot.message_handler(commands=['help'])
 def bot_help(message: Message) -> None:
 	"""
-    Функция обработки команды help
-    :param message: объект полученного сообщения от пользователя
+    Обработка команды help
+    :param message: Объект полученного сообщения от пользователя
     :return: None
 
     """
