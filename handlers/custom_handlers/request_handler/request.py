@@ -12,7 +12,12 @@ import utils.select_date_from_calendar as sd
 
 
 @bot.message_handler(state=UserRequest.city)
-def get_region_id(msg: Message):
+def get_region_id(msg: Message) -> None:
+    """
+    Получить regionId по названию города для последующего запроса списка отелей
+    :param msg: Объект полученного сообщения от пользователя
+    :return: None
+    """
     city_name = msg.text
     list_of_cities = api.get_regionid_of_city(city_name)
     if not list_of_cities:
@@ -31,7 +36,13 @@ def get_region_id(msg: Message):
 @bot.callback_query_handler(
     func=lambda call: not call.data.startswith('request') and not
     call.data.startswith('photo'))
-def print_region(call: CallbackQuery):
+def print_region(call: CallbackQuery) -> None:
+    """
+    Уточнить город назначения
+    :param call: Объект callback от пользователя при нажатии на конкретный
+    город
+    :return: None
+    """
     [city_name, region_id] = call.data.split('|')
     with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
         data['regionId'] = region_id
@@ -43,7 +54,12 @@ def print_region(call: CallbackQuery):
 
 
 @bot.message_handler(state=UserRequest.hotels_quantity)
-def get_hotels_quantity(msg: Message):
+def get_hotels_quantity(msg: Message) -> None:
+    """
+    Получить количество запрашиваемых отелей
+    :param msg: Объект полученного сообщения от пользователя
+    :return: None
+    """
     with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
         data['hotels_quantity'] = int(msg.text)
     bot.set_state(msg.from_user.id, UserRequest.is_photo_enabled,
@@ -58,6 +74,11 @@ def get_hotels_quantity(msg: Message):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('photo'))
 def is_photos_enabled(call: CallbackQuery):
+    """
+    Получить ответ нужно ли загружать фото.
+    :param call: Объект callback от пользователя с ответом ДА или НЕТ
+    :return: None
+    """
     with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
         is_photo = call.data.split('_')[1]
         data['is_photos_enabled'] = is_photo
@@ -78,7 +99,12 @@ def is_photos_enabled(call: CallbackQuery):
 
 
 @bot.message_handler(state=UserRequest.photo_quantity)
-def get_quantity_of_photos(msg: Message):
+def get_quantity_of_photos(msg: Message) -> None:
+    """
+    Получить количество запрашиваемых фотографий
+    :param msg: Объект полученного сообщения от пользователя
+    :return: None
+    """
     with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
         data['quantity_of_photos'] = int(msg.text)
     bot.set_state(msg.from_user.id, UserRequest.checkin_date,
@@ -89,7 +115,12 @@ def get_quantity_of_photos(msg: Message):
 
 
 @bot.message_handler(state=UserRequest.adults)
-def get_adults_quantity(msg: Message):
+def get_adults_quantity(msg: Message) -> None:
+    """
+    Уточнить количество взрослых
+    :param msg: Объект полученного сообщения от пользователя
+    :return: None
+    """
     try:
         with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
             data['adults'] = int(msg.text)
@@ -102,7 +133,13 @@ def get_adults_quantity(msg: Message):
 
 
 @bot.message_handler(state=UserRequest.children_num)
-def get_children_quantity(msg: Message):
+def get_children_quantity(msg: Message) -> None:
+    """
+    Уточнить количество детей. Если без детей для запросов lowprice и
+    bestdeal подтвердить введенные данные
+    :param msg: Объект полученного сообщения от пользователя
+    :return: None
+    """
     try:
         with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
             data['children_num'] = int(msg.text)
@@ -144,7 +181,13 @@ def get_children_quantity(msg: Message):
 
 
 @bot.message_handler(state=UserRequest.children_ages)
-def get_children_ages(msg: Message):
+def get_children_ages(msg: Message) -> None:
+    """
+    Получить возраст детей и для запросов lowprice и
+    bestdeal подтвердить введенные данные
+    :param msg: Объект полученного сообщения от пользователя
+    :return: None
+    """
     try:
         with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
             number_of_child = {
@@ -192,7 +235,12 @@ def get_children_ages(msg: Message):
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('request'))
-def request_list_of_hotels(call: CallbackQuery):
+def request_list_of_hotels(call: CallbackQuery) -> None:
+    """
+    Получить список отелей по запросу
+    :param call: Объект callback при нажатии Request от пользователя
+    :return: None
+    """
     bot.send_message(call.from_user.id, 'Working on your request ...')
     with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
         if data['command'] == 'bestdeal':
@@ -247,7 +295,12 @@ def request_list_of_hotels(call: CallbackQuery):
 
 
 @bot.message_handler(state=UserRequest.distance_range)
-def get_distance_from_downtown(msg: Message):
+def get_distance_from_downtown(msg: Message) -> None:
+    """
+    Получить радиус поиска от центра города
+    :param msg: Объект полученного сообщения от пользователя
+    :return: None
+    """
     try:
         with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
             data['distance_range'] = int(msg.text)
@@ -260,7 +313,13 @@ def get_distance_from_downtown(msg: Message):
 
 
 @bot.message_handler(state=UserRequest.cost_range)
-def get_cost_range(msg: Message):
+def get_cost_range(msg: Message) -> None:
+    """
+    Получить диапазон цен запрашиваемых отелей и подтвердить
+    введенные данные
+    :param msg: Объект полученного сообщения от пользователя
+    :return: None
+    """
     with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
         if 'minimal_cost' not in data.keys():
             data['minimal_cost'] = int(msg.text)
