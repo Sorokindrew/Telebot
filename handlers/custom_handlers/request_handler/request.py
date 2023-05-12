@@ -1,4 +1,5 @@
 import sqlite3
+import datetime
 
 from telebot.types import Message, InlineKeyboardButton, \
     InlineKeyboardMarkup, CallbackQuery, InputMediaPhoto
@@ -9,6 +10,24 @@ import api
 from utils.sort_bestdeal_hotels import sort_bestdeal_hotels
 import data_base
 import utils.select_date_from_calendar as sd
+
+
+@bot.message_handler(commands=['lowprice', 'highprice', 'bestdeal'])
+def request_command_handler(msg: Message) -> None:
+    """
+    Обработка команды запроса
+    :param msg: Объект полученного сообщения от пользователя с командой
+    :return: None
+
+    """
+    bot.set_state(msg.from_user.id, UserRequest.city, msg.chat.id)
+    with bot.retrieve_data(msg.from_user.id, msg.chat.id) as data:
+        data['command'] = msg.text[1:]
+        print(msg.text[1:])
+        data['user_id'] = msg.from_user.id
+        data['time_of_request'] = datetime.datetime.now()
+        data['number_of_request'] = 0  # параметр для повторного запроса
+    bot.send_message(msg.chat.id, 'Where are You going?')
 
 
 @bot.message_handler(state=UserRequest.city)
@@ -241,57 +260,83 @@ def request_list_of_hotels(call: CallbackQuery) -> None:
     :param call: Объект callback при нажатии Request от пользователя
     :return: None
     """
-    bot.send_message(call.from_user.id, 'Working on your request ...')
-    with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
-        if data['command'] == 'bestdeal':
-            requested_hotels = \
-                sort_bestdeal_hotels(api.get_list_of_hotels(data,
-                                                            start_index=0),
-                                     data['maximum_cost'],
-                                     data['distance_range'])
-        elif data['command'] == 'highprice':
-            start_index = 0
-            hotels_list = []
-            while not hotels_list:
-                hotels_list = api.get_list_of_hotels(data,
-                                                     start_index=start_index)
-                start_index += 50
-            # hotels_list = api.get_list_of_hotels(data, start_index)
-            requested_hotels = []
-            for index in range(len(hotels_list) - 1,
-                               len(hotels_list) - data['hotels_quantity'] - 1,
-                               -1):
-                requested_hotels.append(hotels_list[index])
-        else:
-            requested_hotels = api.get_list_of_hotels(data, start_index=0)
-        for hotel in requested_hotels:
-            if data['is_photos_enabled'] == 'No':
-                bot.send_message(call.message.chat.id, hotel.get_hotel_info())
+    if call.data.endswith('yes') or call.data.endswith('request'):
+        m = bot.send_message(call.from_user.id, 'Working on your request ...')
+        with bot.retrieve_data(call.from_user.id,
+                               call.message.chat.id) as data:
+            if data['number_of_request'] > 0:
+                data['time_of_request'] = datetime.datetime.now()
+            if data['command'] == 'bestdeal':
+                requested_hotels = \
+                    sort_bestdeal_hotels(api.get_list_of_hotels(
+                        data,
+                        start_index=data['number_of_request']
+                                    * data['hotels_quantity']),
+                        data['maximum_cost'],
+                        data['distance_range'])
+            elif data['command'] == 'highprice':
+                start_index = 0
+                hotels_list = []
+                while not hotels_list:
+                    hotels_list = \
+                        api.get_list_of_hotels(data,
+                                               start_index=start_index)
+                    start_index += 50
+                # hotels_list = api.get_list_of_hotels(data, start_index)
+                requested_hotels = []
+                for index in range(len(hotels_list)
+                                   - (data['number_of_request'] - 1)
+                                   * data['hotels_quantity']
+                                   - 1,
+                                   len(hotels_list)
+                                   - data['hotels_quantity']
+                                   * data['number_of_request']
+                                   - 1,
+                                   -1):
+                    requested_hotels.append(hotels_list[index])
             else:
-                media = []
-                for index in range(data['quantity_of_photos']):
-                    if index == 0:
-                        media.append(
-                            InputMediaPhoto(
-                                hotel.get_hotel_photos()[index],
-                                caption=hotel.get_hotel_info()))
-                    else:
-                        media.append(
-                            InputMediaPhoto(
-                                hotel.get_hotel_photos()[index]))
-                bot.send_media_group(call.message.chat.id, media)
-        with sqlite3.connect('history.db') as conn:
-            data_base.insert_request_info_to_db(conn, data)
-            request_id = data_base.get_request_id(conn, data)
-            data_base.insert_result_of_request_to_db(conn,
-                                                     hotels=requested_hotels,
-                                                     request_id=request_id)
-    bot.delete_state(call.from_user.id, call.message.chat.id)
-    bot.send_message(
-        chat_id=call.message.chat.id,
-        text="For new request use one of the following command "
-             "\n/lowprice\n/highprice\n/bestdeal\n/history"
-    )
+                requested_hotels = api.get_list_of_hotels(
+                    data,
+                    start_index=data['number_of_request']
+                                * data['hotels_quantity'])
+            for hotel in requested_hotels:
+                if data['is_photos_enabled'] == 'No':
+                    bot.send_message(call.message.chat.id,
+                                     hotel.get_hotel_info())
+                else:
+                    media = []
+                    for index in range(data['quantity_of_photos']):
+                        if index == 0:
+                            media.append(
+                                InputMediaPhoto(
+                                    hotel.get_hotel_photos()[index],
+                                    caption=hotel.get_hotel_info()))
+                        else:
+                            media.append(
+                                InputMediaPhoto(
+                                    hotel.get_hotel_photos()[index]))
+                    bot.send_media_group(call.message.chat.id, media)
+            with sqlite3.connect('history.db') as conn:
+                data_base.insert_request_info_to_db(conn, data)
+                request_id = data_base.get_request_id(conn, data)
+                data_base.insert_result_of_request_to_db(
+                    conn,
+                    hotels=requested_hotels,
+                    request_id=request_id)
+            data['number_of_request'] += 1
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton('Yes', callback_data='request_yes'),
+                   InlineKeyboardButton('No', callback_data='request_no'))
+        bot.send_message(chat_id=call.message.chat.id,
+                         text='Request more hotels with same parameters?',
+                         reply_markup=markup)
+    else:
+        bot.delete_state(call.from_user.id, call.message.chat.id)
+        bot.send_message(
+            chat_id=call.message.chat.id,
+            text="For new request use one of the following command "
+                 "\n/lowprice\n/highprice\n/bestdeal\n/history"
+        )
 
 
 @bot.message_handler(state=UserRequest.distance_range)
